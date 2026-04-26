@@ -2,6 +2,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import useAuthStore from "../../store/authStore";
+import { Toaster } from "react-hot-toast";
 
 export function AppLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -19,6 +20,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <Toaster position="top-right" />
     </div>
   );
 }

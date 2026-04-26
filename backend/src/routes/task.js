@@ -7,6 +7,7 @@ import { createTaskSchema, updateTaskSchema } from "../validators/schemas.js";
 import {
   createTask,
   getTasksByProject,
+  getMyTasks,
   updateTask,
   deleteTask,
   uploadAttachment,
@@ -18,6 +19,7 @@ const router = Router();
 router.use(protect);
 
 router.post("/", validate(createTaskSchema), isProjectMember, createTask);
+router.get("/", getMyTasks);
 router.get("/project/:projectId", isProjectMember, getTasksByProject);
 router.put("/:id", validate(updateTaskSchema), updateTask);
 router.delete("/:id", deleteTask);

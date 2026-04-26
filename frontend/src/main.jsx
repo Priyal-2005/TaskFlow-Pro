@@ -8,6 +8,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { ProjectDetails } from './pages/ProjectDetails';
+import { MyTasks } from './pages/MyTasks';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/projects/:id" element={<ProjectDetails />} />
+          <Route path="/tasks" element={<MyTasks />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

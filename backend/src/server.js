@@ -67,7 +67,7 @@ app.get("/", (_req, res) => {
 app.use(errorHandler);
 
 // ─── Start Server ────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`http://localhost:${PORT}`);
