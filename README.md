@@ -7,11 +7,12 @@ A comprehensive, production-grade project management platform built with the MER
 - **User Authentication**: Secure sign-up and login system using JWT and `bcryptjs`.
 - **Project Management**: Create, update, and delete projects. Add members to collaborate.
 - **Task Management**: Kanban-style task organization (To Do, In Progress, Done).
+- **My Tasks Dashboard**: Dedicated global view of all tasks assigned to the user across all projects with robust filtering.
 - **Role-Based Access Control (RBAC)**: Distinct permissions for project owners and members.
 - **Real-time Collaboration**: Instant UI updates across all clients via Socket.io without page refreshes.
 - **File Uploads**: Direct Cloudinary integration for uploading task attachments.
 - **Activity Auditing**: Comprehensive logging of all project and task activities.
-- **Notification System**: User-targeted notifications for task assignments.
+- **Notification System**: User-targeted notifications and toast alerts.
 - **Production Hardening**: Global error handling, rate limiting, Helmet security, and Zod schema validation.
 - **Modern UI**: Clean, minimal interface built with Tailwind CSS v4, Lucide icons, and Zustand for state management.
 
@@ -112,6 +113,7 @@ npm run dev
 
 ### Tasks
 - `POST   /api/tasks` - Create a new task
+- `GET    /api/tasks` - Get all tasks assigned to current user
 - `GET    /api/tasks/project/:projectId` - Get all tasks for a project
 - `PUT    /api/tasks/:id` - Update a task
 - `DELETE /api/tasks/:id` - Delete a task (Creator/Owner only)
