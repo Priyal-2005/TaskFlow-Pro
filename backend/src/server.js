@@ -5,6 +5,8 @@ import helmet from "helmet";
 
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
+import projectRoutes from "./routes/project.js";
+import taskRoutes from "./routes/task.js";
 import protect from "./middleware/auth.js";
 
 // ─── Connect to MongoDB ──────────────────────────
@@ -19,6 +21,8 @@ app.use(express.json());
 
 // ─── Routes ──────────────────────────────────────
 app.use("/api/auth", authRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/tasks", taskRoutes);
 
 // Protected test route
 app.get("/api/protected", protect, (req, res) => {
