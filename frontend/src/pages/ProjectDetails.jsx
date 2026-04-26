@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Users, Paperclip, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, Users } from "lucide-react";
+import toast from "react-hot-toast";
 import api from "../services/api";
 import { socket } from "../services/socket";
 import useAuthStore from "../store/authStore";
@@ -24,7 +25,6 @@ export function ProjectDetails() {
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [memberEmailId, setMemberEmailId] = useState("");
   const [isAddingMember, setIsAddingMember] = useState(false);
-  const [allUsers, setAllUsers] = useState([]); // In a real app, you'd search by email
 
   const isOwner = project?.owner._id === user._id;
 
@@ -70,7 +70,7 @@ export function ProjectDetails() {
       setProject(projRes.data.data);
       setTasks(tasksRes.data.data);
     } catch (error) {
-      console.error("Failed to fetch project data", error);
+      toast.error(error.response?.data?.message || "Failed to load project details");
     } finally {
       setIsLoading(false);
     }
@@ -84,8 +84,9 @@ export function ProjectDetails() {
       // We don't manually add it to state because Socket.io will broadcast it back to us
       setIsTaskModalOpen(false);
       setNewTask({ title: "", description: "", assignedTo: "" });
+      toast.success("Task created");
     } catch (error) {
-      console.error("Failed to create task", error);
+      toast.error(error.response?.data?.message || "Failed to create task");
     } finally {
       setIsCreatingTask(false);
     }
@@ -95,7 +96,7 @@ export function ProjectDetails() {
     try {
       await api.put(`/tasks/${taskId}`, { status });
     } catch (error) {
-      console.error("Failed to update task", error);
+      toast.error(error.response?.data?.message || "Failed to update task");
     }
   };
 
@@ -103,8 +104,9 @@ export function ProjectDetails() {
     if (!window.confirm("Delete this task?")) return;
     try {
       await api.delete(`/tasks/${taskId}`);
+      toast.success("Task deleted");
     } catch (error) {
-      console.error("Failed to delete task", error);
+      toast.error(error.response?.data?.message || "Failed to delete task");
     }
   };
 
@@ -117,8 +119,9 @@ export function ProjectDetails() {
 
     try {
       await api.post(`/tasks/${taskId}/upload`, formData);
+      toast.success("File uploaded");
     } catch (error) {
-      console.error("Upload failed", error);
+      toast.error(error.response?.data?.message || "Failed to upload file");
     }
   };
 
@@ -129,9 +132,9 @@ export function ProjectDetails() {
       await api.post(`/projects/${id}/add-member`, { userId: memberEmailId });
       setIsMemberModalOpen(false);
       setMemberEmailId("");
+      toast.success("Member added");
     } catch (error) {
-      console.error("Failed to add member", error);
-      alert(error.response?.data?.message || "Failed to add member");
+      toast.error(error.response?.data?.message || "Failed to add member");
     } finally {
       setIsAddingMember(false);
     }

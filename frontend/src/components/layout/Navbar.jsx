@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bell, User } from "lucide-react";
+import toast from "react-hot-toast";
 import useAuthStore from "../../store/authStore";
 import useAppStore from "../../store/appStore";
 import api from "../../services/api";
@@ -15,7 +16,7 @@ export function Navbar() {
         const { data } = await api.get("/notifications");
         setNotifications(data.data);
       } catch (error) {
-        console.error("Failed to fetch notifications", error);
+        // silently fail for background notification fetch
       }
     };
     fetchNotifications();
@@ -26,7 +27,7 @@ export function Navbar() {
       await api.put(`/notifications/${id}/read`);
       markAsRead(id);
     } catch (error) {
-      console.error("Failed to mark as read", error);
+      toast.error(error.response?.data?.message || "Failed to mark as read");
     }
   };
 

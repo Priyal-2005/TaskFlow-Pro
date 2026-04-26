@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Folder } from "lucide-react";
+import toast from "react-hot-toast";
 import api from "../services/api";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -23,7 +24,7 @@ export function Dashboard() {
       const { data } = await api.get("/projects");
       setProjects(data.data);
     } catch (error) {
-      console.error("Failed to fetch projects", error);
+      toast.error(error.response?.data?.message || "Failed to load projects");
     } finally {
       setIsLoading(false);
     }
@@ -37,8 +38,9 @@ export function Dashboard() {
       setProjects([data.data, ...projects]);
       setIsModalOpen(false);
       setNewProject({ name: "", description: "" });
+      toast.success("Project created successfully");
     } catch (error) {
-      console.error("Failed to create project", error);
+      toast.error(error.response?.data?.message || "Failed to create project");
     } finally {
       setIsCreating(false);
     }
