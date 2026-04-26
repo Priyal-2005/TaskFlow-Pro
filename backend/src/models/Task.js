@@ -1,5 +1,18 @@
 import mongoose from "mongoose";
 
+const attachmentSchema = new mongoose.Schema(
+  {
+    url: { type: String, required: true },
+    public_id: { type: String, required: true },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { _id: true, timestamps: true }
+);
+
 const taskSchema = new mongoose.Schema(
   {
     title: {
@@ -31,6 +44,7 @@ const taskSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    attachments: [attachmentSchema],
   },
   { timestamps: true }
 );

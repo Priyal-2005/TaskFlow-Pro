@@ -13,23 +13,20 @@ const generateToken = (id) => {
  * @desc    Register a new user
  * @access  Public
  */
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Please provide all fields" });
-    }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ success: false, message: "User already exists" });
     }
 
     const user = await User.create({ name, email, password });
     const token = generateToken(user._id);
 
     res.status(201).json({
+      success: true,
       token,
       user: {
         _id: user._id,
@@ -40,7 +37,7 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -49,27 +46,24 @@ export const register = async (req, res) => {
  * @desc    Authenticate user & return token
  * @access  Public
  */
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Please provide email and password" });
-    }
-
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
     const token = generateToken(user._id);
 
     res.json({
+      success: true,
       token,
       user: {
         _id: user._id,
@@ -80,7 +74,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -89,10 +83,10 @@ export const login = async (req, res) => {
  * @desc    Get current authenticated user
  * @access  Private
  */
-export const getMe = async (req, res) => {
+export const getMe = async (req, res, next) => {
   try {
-    res.json({ user: req.user });
+    res.json({ success: true, user: req.user });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    next(error);
   }
 };

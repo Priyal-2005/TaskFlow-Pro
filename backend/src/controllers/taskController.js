@@ -9,17 +9,13 @@ import { getIO } from "../sockets/socket.js";
  * @desc    Create a task inside a project (must be member — enforced by middleware)
  * @access  Private + isProjectMember
  */
-export const createTask = async (req, res) => {
+export const createTask = async (req, res, next) => {
   try {
     const { title, description, status, project: projectId, assignedTo } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ success: false, message: "Task title is required" });
-    }
-
     // If assigning, verify assignee is a project member
     if (assignedTo) {
-      const proj = req.project; // attached by isProjectMember middleware
+      const proj = req.project;
       const isMember = proj.members.some((m) => m.equals(assignedTo));
       if (!isMember) {
         return res.status(400).json({ success: false, message: "Cannot assign task to a non-member" });
@@ -38,7 +34,6 @@ export const createTask = async (req, res) => {
     await task.populate("assignedTo", "name email");
     await task.populate("createdBy", "name email");
 
-    // ─── Phase 3: Activity + Socket + Notification ───
     await logActivity(
       req.user._id, projectId, "created", "task", task._id,
       `${req.user.name} created task '${task.title}'`
@@ -52,7 +47,7 @@ export const createTask = async (req, res) => {
 
     res.status(201).json({ success: true, data: task });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -61,16 +56,17 @@ export const createTask = async (req, res) => {
  * @desc    Get all tasks for a project (must be member — enforced by middleware)
  * @access  Private + isProjectMember
  */
-export const getTasksByProject = async (req, res) => {
+export const getTasksByProject = async (req, res, next) => {
   try {
     const tasks = await Task.find({ project: req.params.projectId })
       .populate("assignedTo", "name email")
       .populate("createdBy", "name email")
+      .populate("attachments.uploadedBy", "name email")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: tasks });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -79,14 +75,13 @@ export const getTasksByProject = async (req, res) => {
  * @desc    Update a task (title, description, status, assignedTo)
  * @access  Private
  */
-export const updateTask = async (req, res) => {
+export const updateTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ success: false, message: "Task not found" });
     }
 
-    // Verify user is a member of the task's project
     const project = await Project.findById(task.project);
     if (!project) {
       return res.status(404).json({ success: false, message: "Associated project not found" });
@@ -97,7 +92,6 @@ export const updateTask = async (req, res) => {
       return res.status(403).json({ success: false, message: "You are not a member of this project" });
     }
 
-    // If reassigning, verify new assignee is a project member
     if (req.body.assignedTo) {
       const assigneeIsMember = project.members.some((m) => m.equals(req.body.assignedTo));
       if (!assigneeIsMember) {
@@ -116,7 +110,6 @@ export const updateTask = async (req, res) => {
     await task.populate("assignedTo", "name email");
     await task.populate("createdBy", "name email");
 
-    // ─── Phase 3: Activity + Socket ─────────────────
     const projectId = task.project.toString();
     const changes = [];
     if (status !== undefined) changes.push(`status to '${status}'`);
@@ -132,7 +125,7 @@ export const updateTask = async (req, res) => {
 
     res.json({ success: true, data: task });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -141,7 +134,7 @@ export const updateTask = async (req, res) => {
  * @desc    Delete a task (only task creator or project owner)
  * @access  Private
  */
-export const deleteTask = async (req, res) => {
+export const deleteTask = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) {
@@ -166,7 +159,6 @@ export const deleteTask = async (req, res) => {
 
     await Task.findByIdAndDelete(req.params.id);
 
-    // ─── Phase 3: Activity + Socket ─────────────────
     await logActivity(
       req.user._id, projectId, "deleted", "task", taskId,
       `${req.user.name} deleted task '${taskTitle}'`
@@ -176,6 +168,59 @@ export const deleteTask = async (req, res) => {
 
     res.json({ success: true, message: "Task deleted" });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/tasks/:id/upload
+ * @desc    Upload a file attachment to a task
+ * @access  Private (must be project member)
+ */
+export const uploadAttachment = async (req, res, next) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    const project = await Project.findById(task.project);
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Associated project not found" });
+    }
+
+    const isMember = project.members.some((m) => m.equals(req.user._id));
+    if (!isMember) {
+      return res.status(403).json({ success: false, message: "You are not a member of this project" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    task.attachments.push({
+      url: req.file.path,
+      public_id: req.file.filename,
+      uploadedBy: req.user._id,
+    });
+
+    await task.save();
+
+    await task.populate("attachments.uploadedBy", "name email");
+    await task.populate("assignedTo", "name email");
+    await task.populate("createdBy", "name email");
+
+    const projectId = task.project.toString();
+
+    await logActivity(
+      req.user._id, projectId, "uploaded", "task", task._id,
+      `${req.user.name} uploaded a file to task '${task.title}'`
+    );
+
+    getIO().to(projectId).emit("task_updated", task);
+
+    res.json({ success: true, data: task });
+  } catch (error) {
+    next(error);
   }
 };

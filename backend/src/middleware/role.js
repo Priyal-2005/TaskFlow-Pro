@@ -56,3 +56,19 @@ export const isProjectMember = async (req, res, next) => {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
+
+/**
+ * Reusable middleware factory: authorize by project role.
+ *
+ * @param {"owner" | "member"} role - Required role level
+ * @returns Express middleware
+ *
+ * Usage:
+ *   router.put("/:id", authorizeProjectRole("owner"), updateProject);
+ *   router.post("/", authorizeProjectRole("member"), createTask);
+ */
+export const authorizeProjectRole = (role) => {
+  if (role === "owner") return isProjectOwner;
+  if (role === "member") return isProjectMember;
+  throw new Error(`Unknown project role: ${role}`);
+};

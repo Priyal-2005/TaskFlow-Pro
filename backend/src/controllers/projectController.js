@@ -8,13 +8,9 @@ import { getIO } from "../sockets/socket.js";
  * @desc    Create a new project
  * @access  Private
  */
-export const createProject = async (req, res) => {
+export const createProject = async (req, res, next) => {
   try {
     const { name, description } = req.body;
-
-    if (!name) {
-      return res.status(400).json({ success: false, message: "Project name is required" });
-    }
 
     const project = await Project.create({
       name,
@@ -22,11 +18,9 @@ export const createProject = async (req, res) => {
       owner: req.user._id,
     });
 
-    // Populate owner & members for the response
     await project.populate("owner", "name email");
     await project.populate("members", "name email");
 
-    // ─── Phase 3: Activity ──────────────────────────
     await logActivity(
       req.user._id, project._id, "created", "project", project._id,
       `${req.user.name} created project '${project.name}'`
@@ -34,7 +28,7 @@ export const createProject = async (req, res) => {
 
     res.status(201).json({ success: true, data: project });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -43,7 +37,7 @@ export const createProject = async (req, res) => {
  * @desc    Get all projects where user is owner or member
  * @access  Private
  */
-export const getProjects = async (req, res) => {
+export const getProjects = async (req, res, next) => {
   try {
     const projects = await Project.find({
       $or: [{ owner: req.user._id }, { members: req.user._id }],
@@ -54,7 +48,7 @@ export const getProjects = async (req, res) => {
 
     res.json({ success: true, data: projects });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -63,7 +57,7 @@ export const getProjects = async (req, res) => {
  * @desc    Get a single project (must be member — enforced by middleware)
  * @access  Private + isProjectMember
  */
-export const getProject = async (req, res) => {
+export const getProject = async (req, res, next) => {
   try {
     const project = await Project.findById(req.params.id)
       .populate("owner", "name email")
@@ -75,7 +69,7 @@ export const getProject = async (req, res) => {
 
     res.json({ success: true, data: project });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -84,7 +78,7 @@ export const getProject = async (req, res) => {
  * @desc    Update project (owner only — enforced by middleware)
  * @access  Private + isProjectOwner
  */
-export const updateProject = async (req, res) => {
+export const updateProject = async (req, res, next) => {
   try {
     const { name, description } = req.body;
 
@@ -96,7 +90,6 @@ export const updateProject = async (req, res) => {
       .populate("owner", "name email")
       .populate("members", "name email");
 
-    // ─── Phase 3: Activity + Socket ─────────────────
     const projectId = project._id.toString();
 
     await logActivity(
@@ -108,7 +101,7 @@ export const updateProject = async (req, res) => {
 
     res.json({ success: true, data: project });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -117,12 +110,12 @@ export const updateProject = async (req, res) => {
  * @desc    Delete project (owner only — enforced by middleware)
  * @access  Private + isProjectOwner
  */
-export const deleteProject = async (req, res) => {
+export const deleteProject = async (req, res, next) => {
   try {
     await Project.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Project deleted" });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
@@ -131,15 +124,10 @@ export const deleteProject = async (req, res) => {
  * @desc    Add a member to the project (owner only — enforced by middleware)
  * @access  Private + isProjectOwner
  */
-export const addMember = async (req, res) => {
+export const addMember = async (req, res, next) => {
   try {
     const { userId } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ success: false, message: "userId is required" });
-    }
-
-    // Verify the target user exists
     const userToAdd = await User.findById(userId);
     if (!userToAdd) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -147,7 +135,6 @@ export const addMember = async (req, res) => {
 
     const project = req.project; // attached by isProjectOwner middleware
 
-    // Prevent duplicate members
     if (project.members.some((m) => m.equals(userId))) {
       return res.status(400).json({ success: false, message: "User is already a member" });
     }
@@ -158,7 +145,6 @@ export const addMember = async (req, res) => {
     await project.populate("owner", "name email");
     await project.populate("members", "name email");
 
-    // ─── Phase 3: Activity + Socket ─────────────────
     const projectId = project._id.toString();
 
     await logActivity(
@@ -170,6 +156,6 @@ export const addMember = async (req, res) => {
 
     res.json({ success: true, data: project });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
