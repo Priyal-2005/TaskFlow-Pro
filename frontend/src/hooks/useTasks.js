@@ -47,9 +47,7 @@ export function useTasks() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const { data } = await api.post(`/tasks/${taskId}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const { data } = await api.post(`/tasks/${taskId}/upload`, formData);
       setTasks((prev) => prev.map((t) => t._id === taskId ? data.data : t));
       return { success: true };
     } catch (err) {

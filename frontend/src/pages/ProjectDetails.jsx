@@ -116,9 +116,7 @@ export function ProjectDetails() {
     formData.append("file", file);
 
     try {
-      await api.post(`/tasks/${taskId}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      await api.post(`/tasks/${taskId}/upload`, formData);
     } catch (error) {
       console.error("Upload failed", error);
     }
