@@ -93,8 +93,12 @@ npm run dev
 
 ## Usage
 
-- **Access the application**: Open `http://localhost:5173` (or the port Vite provides) in your browser.
-- **Backend API**: The API is available at `http://localhost:5001/api`.
+- **Live Application**: Access the deployed frontend at https://task-flow-pro-pi.vercel.app/
+- **Live API**: The backend API is available at https://taskflow-pro-s8d7.onrender.com/api
+
+To run locally instead:
+- Open `http://localhost:5173` for the frontend.
+- API is available at `http://localhost:5001/api`.
 
 ## API Endpoints
 
@@ -144,4 +148,4 @@ bash test_phase4.sh
 ## Deployed Link
 
 Backend: https://taskflow-pro-s8d7.onrender.com/
-Frontend: 
+Frontend: https://task-flow-pro-pi.vercel.app/

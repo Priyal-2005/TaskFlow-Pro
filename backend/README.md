@@ -96,6 +96,7 @@ src/
 | Method | Path                          | Auth                 | Description          |
 | ------ | ----------------------------- | -------------------- | -------------------- |
 | POST   | /api/tasks                    | Bearer+Member        | Create (Zod)         |
+| GET    | /api/tasks                    | Bearer               | List user's tasks    |
 | GET    | /api/tasks/project/:projectId | Bearer+Member        | List project tasks   |
 | PUT    | /api/tasks/:id                | Bearer+Member        | Update (Zod)         |
 | DELETE | /api/tasks/:id                | Bearer+Creator/Owner | Delete task          |
@@ -134,3 +135,8 @@ src/
 - **Global Error Handler**: Consistent JSON errors, no stack traces in production
 - **RBAC**: `authorizeProjectRole("owner")` / `authorizeProjectRole("member")`
 - **File Uploads**: Cloudinary via multer-storage-cloudinary (10MB limit)
+
+## Deployed Links
+
+- **Backend**: https://taskflow-pro-s8d7.onrender.com/
+- **Frontend**: https://task-flow-pro-pi.vercel.app/
