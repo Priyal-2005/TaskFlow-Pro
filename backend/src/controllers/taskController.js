@@ -1,5 +1,8 @@
 import Task from "../models/Task.js";
 import Project from "../models/Project.js";
+import { logActivity } from "../services/activityService.js";
+import { notifyUser, notifyProjectMembers } from "../services/notificationService.js";
+import { getIO } from "../sockets/socket.js";
 
 /**
  * @route   POST /api/tasks
@@ -34,6 +37,18 @@ export const createTask = async (req, res) => {
 
     await task.populate("assignedTo", "name email");
     await task.populate("createdBy", "name email");
+
+    // ─── Phase 3: Activity + Socket + Notification ───
+    await logActivity(
+      req.user._id, projectId, "created", "task", task._id,
+      `${req.user.name} created task '${task.title}'`
+    );
+
+    getIO().to(projectId).emit("task_created", task);
+
+    if (assignedTo && !req.user._id.equals(assignedTo)) {
+      await notifyUser(assignedTo, `You were assigned to task '${task.title}'`);
+    }
 
     res.status(201).json({ success: true, data: task });
   } catch (error) {
@@ -101,6 +116,20 @@ export const updateTask = async (req, res) => {
     await task.populate("assignedTo", "name email");
     await task.populate("createdBy", "name email");
 
+    // ─── Phase 3: Activity + Socket ─────────────────
+    const projectId = task.project.toString();
+    const changes = [];
+    if (status !== undefined) changes.push(`status to '${status}'`);
+    if (title !== undefined) changes.push(`title to '${title}'`);
+    const changeMsg = changes.length > 0 ? changes.join(", ") : "details";
+
+    await logActivity(
+      req.user._id, projectId, "updated", "task", task._id,
+      `${req.user.name} updated ${changeMsg} on task '${task.title}'`
+    );
+
+    getIO().to(projectId).emit("task_updated", task);
+
     res.json({ success: true, data: task });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -131,7 +160,20 @@ export const deleteTask = async (req, res) => {
       return res.status(403).json({ success: false, message: "Only the task creator or project owner can delete this task" });
     }
 
+    const taskTitle = task.title;
+    const projectId = task.project.toString();
+    const taskId = task._id.toString();
+
     await Task.findByIdAndDelete(req.params.id);
+
+    // ─── Phase 3: Activity + Socket ─────────────────
+    await logActivity(
+      req.user._id, projectId, "deleted", "task", taskId,
+      `${req.user.name} deleted task '${taskTitle}'`
+    );
+
+    getIO().to(projectId).emit("task_deleted", taskId);
+
     res.json({ success: true, message: "Task deleted" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error", error: error.message });

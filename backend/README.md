@@ -106,6 +106,6 @@ curl -X PUT http://localhost:5000/api/tasks/<taskId> \
 
 | Variable   | Description               | Default                           |
 | ---------- | ------------------------- | --------------------------------- |
-| PORT       | Server port               | 5000                              |
-| MONGO_URI  | MongoDB connection string | mongodb://localhost:27017/taskflow |
+| PORT       | Server port               | 5001                              |
+| MONGO_URI  | MongoDB connection string | mongodb+srv://priyalsarda_01:[EMAIL_ADDRESS]/taskflow |
 | JWT_SECRET | Secret for signing JWTs   | *(required)*                      |

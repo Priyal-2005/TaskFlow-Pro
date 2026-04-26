@@ -1,5 +1,7 @@
 import Project from "../models/Project.js";
 import User from "../models/User.js";
+import { logActivity } from "../services/activityService.js";
+import { getIO } from "../sockets/socket.js";
 
 /**
  * @route   POST /api/projects
@@ -23,6 +25,12 @@ export const createProject = async (req, res) => {
     // Populate owner & members for the response
     await project.populate("owner", "name email");
     await project.populate("members", "name email");
+
+    // ─── Phase 3: Activity ──────────────────────────
+    await logActivity(
+      req.user._id, project._id, "created", "project", project._id,
+      `${req.user.name} created project '${project.name}'`
+    );
 
     res.status(201).json({ success: true, data: project });
   } catch (error) {
@@ -88,6 +96,16 @@ export const updateProject = async (req, res) => {
       .populate("owner", "name email")
       .populate("members", "name email");
 
+    // ─── Phase 3: Activity + Socket ─────────────────
+    const projectId = project._id.toString();
+
+    await logActivity(
+      req.user._id, projectId, "updated", "project", projectId,
+      `${req.user.name} updated project '${project.name}'`
+    );
+
+    getIO().to(projectId).emit("project_updated", project);
+
     res.json({ success: true, data: project });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -139,6 +157,16 @@ export const addMember = async (req, res) => {
 
     await project.populate("owner", "name email");
     await project.populate("members", "name email");
+
+    // ─── Phase 3: Activity + Socket ─────────────────
+    const projectId = project._id.toString();
+
+    await logActivity(
+      req.user._id, projectId, "added_member", "project", projectId,
+      `${req.user.name} added ${userToAdd.name} to project '${project.name}'`
+    );
+
+    getIO().to(projectId).emit("project_updated", project);
 
     res.json({ success: true, data: project });
   } catch (error) {
